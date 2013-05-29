@@ -14,6 +14,14 @@ public class ProtobufCompile extends AbstractCompile {
         return null
     }
 
+    public File getDestinationCPPDir() {
+        return null
+    }
+
+    public File getDestinationPythonDir() {
+        return null
+    }
+
     /**
      * Add a directory to protoc's include path.
      */
@@ -37,6 +45,14 @@ public class ProtobufCompile extends AbstractCompile {
         cmd.addAll(getSource().srcDirs*.path.collect {"-I${it}"})
         cmd.addAll(includeDirs*.path.collect {"-I${it}"})
         cmd += "--java_out=${getDestinationDir()}"
+        if (getDestinationCPPDir() != null) {
+            getDestinationCPPDir().mkdir()
+            cmd += "--cpp_out=${getDestinationCPPDir()}"
+        }
+        if (getDestinationPythonDir() != null) {
+            getDestinationPythonDir().mkdir()
+            cmd += "--python_out=${getDestinationPythonDir()}"
+        }
         cmd.addAll getSource().getFiles()
         logger.log(LogLevel.INFO, cmd.toString())
         def output = new StringBuffer()

@@ -15,19 +15,19 @@ class ProtobufPlugin implements Plugin<Project> {
         project.convention.plugins.protobuf = new ProtobufConvention(project);
         project.sourceSets.all { SourceSet sourceSet ->
             def generateJavaTaskName = sourceSet.getTaskName('generate', 'proto')
-            ProtobufCompile generateJavaTask = project.tasks.add(generateJavaTaskName, ProtobufCompile)
+            ProtobufCompile generateJavaTask = project.tasks.create(generateJavaTaskName, ProtobufCompile)
             configureForSourceSet project, sourceSet, generateJavaTask
-            
+
             def protobufConfigName = (sourceSet.getName().equals(SourceSet.MAIN_SOURCE_SET_NAME) ? "protobuf" : sourceSet.getName() + "Protobuf")
-            project.configurations.add(protobufConfigName) {
+            project.configurations.create(protobufConfigName) {
                 visible = false
                 transitive = false
                 extendsFrom = []
             }
             def extractProtosTaskName = sourceSet.getTaskName('extract', 'proto')
-            def extractProtosTask = project.tasks.add(extractProtosTaskName) {
+            def extractProtosTask = project.tasks.create(extractProtosTaskName) {
                 description = "Extracts proto files/dependencies specified by 'protobuf' configuration"
-                actions = [ 
+                actions = [
                 {
                     project.configurations[protobufConfigName].files.each { file ->
                         if (file.path.endsWith('.proto')) {
@@ -64,14 +64,14 @@ class ProtobufPlugin implements Plugin<Project> {
             }
             generateJavaTask.dependsOn(extractProtosTask)
             generateJavaTask.getSource().srcDir project.extractedProtosDir + "/" + sourceSet.getName()
-            
+
             sourceSet.java.srcDir getGeneratedSourceDir(project, sourceSet)
             String compileJavaTaskName = sourceSet.getCompileTaskName("java");
             Task compileJavaTask = project.tasks.getByName(compileJavaTaskName);
             compileJavaTask.dependsOn(generateJavaTask)
         }
     }
-    
+
     void configureForSourceSet(Project project, final SourceSet sourceSet, ProtobufCompile compile) {
         def final defaultSource = new DefaultSourceDirectorySet("${sourceSet.displayName} Protobuf source", project.fileResolver);
         defaultSource.include("**/*.proto")
@@ -89,14 +89,35 @@ class ProtobufPlugin implements Plugin<Project> {
         compile.conventionMapping.map('destinationDir') {
             return new File(getGeneratedSourceDir(project, sourceSet))
         }
+        compile.conventionMapping.map('destinationCPPDir') {
+            return getGeneratedCPPSourceDir(project, sourceSet)
+        }
+        compile.conventionMapping.map('destinationPythonDir') {
+            return getGeneratedPythonSourceDir(project, sourceSet)
+        }
     }
 
     private getGeneratedSourceDir(Project project, SourceSet sourceSet) {
         def generatedSourceDir = "${project.buildDir}/generated-sources"
         if(project.generatedFileDir != null)
 	    generatedSourceDir = project.generatedFileDir
-				
+
         return "${generatedSourceDir}/${sourceSet.name}"
+    }
+
+    private getGeneratedCPPSourceDir(Project project, SourceSet sourceSet) {
+        if(project.generatedCPPFileDir != null)
+            return new File(project.generatedCPPFileDir)
+        else
+            return null
+    }
+
+    private getGeneratedPythonSourceDir(Project project, SourceSet sourceSet) {
+        if(project.generatedPythonFileDir != null)
+            return new File(project.generatedPythonFileDir)
+        else
+            return null
+
     }
 
 }

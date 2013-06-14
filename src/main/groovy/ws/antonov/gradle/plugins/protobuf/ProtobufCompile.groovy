@@ -2,6 +2,7 @@ package ws.antonov.gradle.plugins.protobuf
 
 import org.gradle.api.InvalidUserDataException
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.OutputDirectories
 import org.gradle.api.logging.LogLevel
 import org.gradle.util.CollectionUtils
 import org.gradle.api.tasks.compile.AbstractCompile;
@@ -9,6 +10,9 @@ import org.gradle.api.tasks.compile.AbstractCompile;
 public class ProtobufCompile extends AbstractCompile {
     @Input
     def includeDirs = []
+
+    @OutputDirectories
+    def outputDirs = []
 
     public String getProtocPath() {
         return null
@@ -33,11 +37,22 @@ public class ProtobufCompile extends AbstractCompile {
         }
     }
 
+    /**
+     * Add a directory to Gradle's incremental build output cache
+     */
+    public void includeOutput(Object dir) {
+        if (dir instanceof File) {
+            outputDirs += dir
+        } else {
+            outputDirs += project.file(dir)
+        }
+    }
+
     protected void compile() {
         //println "Compiling protos..."
         //println "${sourceSets.main.java.srcDirs}"
         //println project.getConvention().getPlugin(JavaPluginConvention.class).getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME).protobuf.class
-        getDestinationDir().mkdir()
+        getDestinationDir().mkdirs()
         def dirs = CollectionUtils.join(" -I", getSource().srcDirs)
         logger.debug "ProtobufCompile using directories ${dirs}"
         logger.debug "ProtobufCompile using files ${getSource().getFiles()}"
@@ -45,14 +60,19 @@ public class ProtobufCompile extends AbstractCompile {
         cmd.addAll(getSource().srcDirs*.path.collect {"-I${it}"})
         cmd.addAll(includeDirs*.path.collect {"-I${it}"})
         cmd += "--java_out=${getDestinationDir()}"
+
         if (getDestinationCPPDir() != null) {
-            getDestinationCPPDir().mkdir()
+            getDestinationCPPDir().mkdirs()
+            includeOutput(getDestinationCPPDir())
             cmd += "--cpp_out=${getDestinationCPPDir()}"
         }
+
         if (getDestinationPythonDir() != null) {
-            getDestinationPythonDir().mkdir()
+            getDestinationPythonDir().mkdirs()
+            includeOutput(getDestinationPythonDir())
             cmd += "--python_out=${getDestinationPythonDir()}"
         }
+
         cmd.addAll getSource().getFiles()
         logger.log(LogLevel.INFO, cmd.toString())
         def output = new StringBuffer()

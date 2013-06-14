@@ -107,14 +107,14 @@ class ProtobufPlugin implements Plugin<Project> {
 
     private getGeneratedCPPSourceDir(Project project, SourceSet sourceSet) {
         if(project.generatedCPPFileDir != null)
-            return new File(project.generatedCPPFileDir)
+            return new File("${project.generatedCPPFileDir}/${sourceSet.name}")
         else
             return null
     }
 
     private getGeneratedPythonSourceDir(Project project, SourceSet sourceSet) {
         if(project.generatedPythonFileDir != null)
-            return new File(project.generatedPythonFileDir)
+            return new File("${project.generatedPythonFileDir}/${sourceSet.name}")
         else
             return null
 
